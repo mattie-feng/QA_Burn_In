@@ -103,7 +103,7 @@ def start_test(version,solid_args):
     obj_light_FTP = solid_args[3]
     instance_light_FTP = solid_args[4]
 
-    objEngine = Action(ip_engine_target, telnet_port, passwd, FTP_port, version, solid_args)
+    objEngine = Action(ip_engine_initiator, telnet_port, passwd, FTP_port, version, solid_args)
     s.msg_out(obj_msg_out,'  3. Start testing.\n')
     objEngine.start_test()
     time.sleep(1)
@@ -116,7 +116,7 @@ def get_test_status(version,solid_args):
     # instance_light_telnet = solid_args[2]
     obj_light_FTP = solid_args[3]
     instance_light_FTP = solid_args[4]
-    objEngine = Action(ip_engine_target, telnet_port, passwd, FTP_port, version, solid_args)
+    objEngine = Action(ip_engine_initiator, telnet_port, passwd, FTP_port, version, solid_args)
     s.msg_out(obj_msg_out,'  4. Start getting status.\n')
     s.msg_out(obj_msg_out,'  4.1 Status: %s.\n' % objEngine.get_status())
     time.sleep(1)
@@ -129,7 +129,7 @@ def get_test_result(version,solid_args):
     # instance_light_telnet = solid_args[2]
     obj_light_FTP = solid_args[3]
     instance_light_FTP = solid_args[4]
-    objEngine = Action(ip_engine_target, telnet_port, passwd, FTP_port, version, solid_args)
+    objEngine = Action(ip_engine_initiator, telnet_port, passwd, FTP_port, version, solid_args)
     s.msg_out(obj_msg_out,'  5. Start getting result.\n')
     objEngine.get_result()
     time.sleep(1)
@@ -357,7 +357,7 @@ class Action():
         # Prepare test with putting 'params_new' file
         self._put_burn_in_file('params','params_new')
 
-    def _put_command():
+    def _put_command(self):
         # start test with putting 'command' file
         self._put_burn_in_file('command','command')
 
