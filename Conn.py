@@ -96,17 +96,16 @@ class FTPConn(object):
         def _putfile():
             # try:
             ftp = self._Connection
-            ftp.set_pasv(0)
+            # ftp.set_pasv(0)
             # print(ftp.getwelcome())
             ftp.cwd(strRemoteFolder)
 
             file_path_name = '%s/%s' % (strLocalFolder, strLocalFileName)
             print('--------',file_path_name)
             print('---------r',strRemoteFileName)
-            w = open(file_path_name,'rb')
             if FTPtype == 'asc':
-
-                ftp.storlines('STOR %s' % strRemoteFileName, w)
+                with open(file_path_name,'rb') as f:
+                    ftp.storlines('STOR %s' % strRemoteFileName, f)
             elif FTPtype == 'bin':
                 ftp.storbinary('STOR %s' % strRemoteFileName, open(file_path_name,'rb'))
 
