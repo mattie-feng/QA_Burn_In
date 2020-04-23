@@ -439,7 +439,7 @@ class Action():
         s.chg_light_to_red(self.obj_light_FTP,self.instance_light_FTP)
         s.sand_glass(45,self.message_output)
 
-#reset to factory default
+#reset to factory defaugit checkout -b dev(本地分支名称) origin/dev(远程分支名称)lt
     def factory_default(self):
         if self._TN_Conn.go_to_main_menu():
             self._telnet_write('f')
