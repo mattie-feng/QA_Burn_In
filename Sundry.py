@@ -1,63 +1,47 @@
 # coding:utf-8
 import os
-import sys
 import time
 import datetime
 import re
-
-# from apscheduler.schedulers.blocking import BlockingScheduler
-# from apscheduler.triggers.interval import IntervalTrigger
-
-from collections import OrderedDict as odd
 
 try:
     import configparser as cp
 except Exception:
     import ConfigParser as cp
 
-import GetConfig as gc
 
-import logging
-logging.basicConfig()
-
-# <<<Get Config Field>>>
-setting = gc.Setting()
-error_level = setting.message_level()
-
-oddHAAPErrorDict = setting.oddRegularTrace()
-
-# <<<Get Config Field>>>
+error_level = 2
 
 
 # Change color of light.
-def chg_light_to_green(obj,instance):
-    obj.itemconfig(instance,fill='green')
+def chg_light_to_green(obj, instance):
+    obj.itemconfig(instance, fill='green')
 
-def chg_light_to_red(obj,instance):
-    obj.itemconfig(instance,fill='red')
+
+def chg_light_to_red(obj, instance):
+    obj.itemconfig(instance, fill='red')
 
 
 def encode_utf8(str):
     return str.encode(encoding="utf-8")
 
-def msg_out(obj_msg_out, str):
-    obj_msg_out.insert('insert',str)
 
-def sand_glass(seconds,obj_msg_out = None):
-    print("    ",end = '')
+def msg_out(obj_msg_out, str):
+    obj_msg_out.insert('insert', str)
+
+
+def sand_glass(seconds, obj_msg_out=None):
+    print("    ", end='')
     if obj_msg_out:
-        msg_out(obj_msg_out,'    ')
+        msg_out(obj_msg_out, '    ')
     for i in range(seconds - 1):
         if obj_msg_out:
-            msg_out(obj_msg_out,'.')
-        print('.',end = '')
+            msg_out(obj_msg_out, '.')
+        print('.', end='')
         time.sleep(1)
     if obj_msg_out:
-        msg_out(obj_msg_out,'\n')
+        msg_out(obj_msg_out, '\n')
     print('\n')
-
-
-
 
 
 def deco_OutFromFolder(func):
@@ -81,8 +65,9 @@ def deco_OutFromFolder(func):
 #                 return func(self, *args, **kwargs)
 #             except Exception as E:
 #                 print(func.__name__, E)
-#         return 
+#         return
 #     return _deco
+
 
 def deco_Exception(func):
 
@@ -119,6 +104,7 @@ def is_Warning(intValue, data):
         else:
             return 0
 
+
 def is_trace_level(num):
     if num in (1, 2, 3):
         return True
@@ -131,7 +117,6 @@ def is_IP(strIP):
         return True
 
 
-
 def is_IP_list(lstIP):
     return all(map(is_IP, lstIP))
 
@@ -141,7 +126,8 @@ def is_file(strFileName):
         return True
     else:
         return False
-    
+
+
 def is_folder(strDirName):
     if os.path.isdir(strDirName):
         return True
@@ -171,7 +157,7 @@ def ShowErr(*argvs):
 |    Error message: {:<55}|
 |        {:<66}|
 ----------------------------------------------------------------------------\
-'''.format(argvs[2], err_msg = (argvs[3] if argvs[3] else '' ))))
+'''.format(argvs[2], err_msg=(argvs[3] if argvs[3] else ''))))
     elif error_level == 2:
         pass
     elif error_level == 3:
@@ -184,7 +170,7 @@ def ShowErr(*argvs):
 |        {:<66}|
 ----------------------------------------------------------------------------\
 
-'''.format(argvs[0], argvs[1], argvs[2], err_msg = (argvs[3] if argvs[3] else '' ))))
+'''.format(argvs[0], argvs[1], argvs[2], err_msg=(argvs[3] if argvs[3] else ''))))
 
 
 def make_dir(strFolder):
@@ -197,6 +183,7 @@ def make_dir(strFolder):
             except Exception as E:
                 print('Create folder "{}" fail with error:\n\t"{}"'.format(
                     strFolder, E))
+
 
 def GotoFolder(strFolder):
 
@@ -219,28 +206,6 @@ def GotoFolder(strFolder):
         except Exception as E:
             print('Change to folder "{}" fail with error:\n\t"{}"'.format(
                 strFolder, E))
-
-
-class Timing(object):
-
-    def __init__(self):
-        self.scdl = BlockingScheduler()
-
-    def add_interval(self, job, intSec):
-        trigger = IntervalTrigger(seconds=intSec)
-        self.scdl.add_job(job, trigger)
-
-    def add_once(self, job, rdate):
-        try:
-            self.scdl.add_job(job, 'date', run_date=rdate, max_instances=6)
-        except ValueError as E:
-            self.scdl.add_job(job, 'date')
-        
-    def stt(self):
-        self.scdl.start()
-
-    def stp(self):
-        self.scdl.shutdown()
 
 
 class TimeNow(object):
@@ -269,62 +234,8 @@ class TimeNow(object):
     def wd(self):  # Day of the Week
         return (self._now[6])
 
-
-def TraceAnalyse(strTraceFolder):
-    import xlwt
-
-    def _read_file(strFileName):
-        try:
-            with open(strFileName, 'r+') as f:
-                strTrace = f.read()
-            return strTrace.strip().replace('\ufeff', '')
-        except Exception as E:
-            print('Open file "{}" failed with error:\n\t"{}"'.format(
-                strFileName, E))
-
-    def _trace_analize(lstTraceFiles):
-        intErrFlag = 0
-        strRunResult = ''
-        for strFileName in lstTraceFiles:
-            if (lambda i: i.startswith('Trace_'))(strFileName):
-                print('\n"{}"  analyzing ...'.format(strFileName))
-                strRunResult += '\n"{}"  analyzing ...\n'.format(strFileName)
-                openExcel = xlwt.Workbook()
-                for strErrType in oddHAAPErrorDict.keys():
-                    reErr = re.compile(oddHAAPErrorDict[strErrType])
-                    tupErr = reErr.findall(_read_file(strFileName))
-                    if len(tupErr) > 0:
-                        strOut = ' *** "{}" times of "{}" found...'.format(
-                            (len(tupErr) + 1), strErrType)
-                        print(strOut)
-                        strRunResult += strOut
-                        objSheet = openExcel.add_sheet(strErrType)
-                        for x in range(len(tupErr)):
-                            for y in range(len(tupErr[x])):
-                                objSheet.write(
-                                    x, y, tupErr[x][y].strip().replace(
-                                        "\n", '', 1))
-                        intErrFlag += 1
-                    reErr = None
-                if intErrFlag > 0:
-                    openExcel.save('TraceAnalyze_' +    
-                                   strFileName + '.xls')
-                else:
-                    strOut = '--- No error find in "{}"'.format(strFileName)
-                    print(strOut)
-                    strRunResult += strOut
-                intErrFlag = 0
-        return strRunResult
-
-    strOriginalFolder = os.getcwd()
-    try:
-        GotoFolder(strTraceFolder)
-        lstTraceFile = os.listdir('.')
-        _trace_analize(lstTraceFile)
-    finally:
-        os.chdir(strOriginalFolder)
+# delete unnecessary module and unnecessary function
 
 
 if __name__ == '__main__':
     pass
-
