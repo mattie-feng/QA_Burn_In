@@ -3,9 +3,7 @@
 from ftplib import FTP
 import telnetlib
 import sys
-# import paramiko
 import re
-import time
 import Sundry as s
 
 
@@ -28,6 +26,7 @@ class FTPConn(object):
             try:
                 ftp.connect(self._host, self._port, self._timeout)
                 self._connected = ftp
+                print("FTP Connect Success")
                 return True
             except Exception as E:
                 s.ShowErr(self.__class__.__name__,
@@ -40,6 +39,7 @@ class FTPConn(object):
             try:
                 ftp.login(self._username, self._password)
                 self._logined = ftp
+                print("FTP Login Success")
                 return True
             except Exception as E:
                 # print(E)
@@ -56,61 +56,78 @@ class FTPConn(object):
 
     def GetFile(self, strRemoteFolder, strLocalFolder, strRemoteFileName,
                 strLocalFileName, FTPtype='bin', intBufSize=1024):
-        def _getfile():
-            try:
-                ftp = self._Connection
-                # print(ftp.getwelcome())
-                ftp.cwd(strRemoteFolder)
-                objOpenLocalFile = open('{}/{}'.format(
-                    strLocalFolder, strLocalFileName), "wb")
-                if FTPtype == 'bin':
-                    ftp.retrbinary('RETR {}'.format(strRemoteFileName),
-                                   objOpenLocalFile.write)
-                elif FTPtype == 'asc':
-                    ftp.retrlines('RETR {}'.format(strRemoteFileName),
-                                  objOpenLocalFile.write)
-                objOpenLocalFile.close()
-                ftp.cwd('/')
-                return True
-            except Exception as E:
-                s.ShowErr(self.__class__.__name__,
-                          sys._getframe().f_code.co_name,
-                          'FTP download "{}" failed with error:'.format(
-                              self._host),
-                          '"{}"'.format(E))
+        def _getfile(strRemoteFolder, strLocalFolder, strRemoteFileName,
+                     strLocalFileName):
+            # try:
+            ftp = self._Connection
+            # print(ftp.getwelcome())
+            ftp.cwd(strRemoteFolder)
+            file_path_name = '%s/%s' % (strLocalFolder, strLocalFileName)
+            if FTPtype == 'asc':
+                ftp.retrlines(
+                    'RETR %s' %
+                    strRemoteFileName,
+                    open(
+                        file_path_name,
+                        'w').write)
+            elif FTPtype == 'bin':
+                ftp.retrbinary(
+                    'RETR %s' %
+                    strRemoteFileName,
+                    open(
+                        file_path_name,
+                        'wb').write)
+            # with open(file_path_name, "wb") as f:
+            #     if FTPtype == 'bin':
+            #         ftp.retrbinary('RETR {}'.format(strRemoteFileName),f.write)
+            #     elif FTPtype == 'asc':
+            #         ftp.retrlines(b'RETR %s' % strRemoteFileName, f.write)
+            ftp.cwd('/')
+            return True
+            # except Exception as E:
+            #     s.ShowErr(self.__class__.__name__,
+            #               sys._getframe().f_code.co_name,
+            #               'FTP download "{}" failed with error:'.format(
+            #                   self._host),
+            #               '"{}"'.format(E))
 
         if self._Connection:
-            if _getfile():
+            if _getfile(strRemoteFolder, strLocalFolder, strRemoteFileName,
+                        strLocalFileName):
                 return True
         else:
             if self._FTPconnect():
-                if _getfile():
+                if _getfile(strRemoteFolder, strLocalFolder, strRemoteFileName,
+                            strLocalFileName):
                     return True
 
     def PutFile(self, strRemoteFolder, strLocalFolder, strRemoteFileName,
                 strLocalFileName, FTPtype='bin', intBufSize=1024):
         def _putfile():
-            try:
-                ftp = self._Connection
-                # print(ftp.getwelcome())
-                ftp.cwd(strRemoteFolder)
-                objOpenLocalFile = open('{}/{}'.format(
-                    strLocalFolder, strLocalFileName), 'rb')
-                if FTPtype == 'bin':
-                    ftp.storbinary('STOR {}'.format(strRemoteFileName),
-                                   objOpenLocalFile, intBufSize)
-                elif FTPtype == 'asc':
-                    ftp.storlines('STOR {}'.format(
-                        strRemoteFileName), objOpenLocalFile)
-                ftp.set_debuglevel(0)
-                objOpenLocalFile.close()
-                return True
-            except Exception as E:
-                s.ShowErr(self.__class__.__name__,
-                          sys._getframe().f_code.co_name,
-                          'FTP upload "{}" failed with error:'.format(
-                              self._host),
-                          '"{}"'.format(E))
+            # try:
+            ftp = self._Connection
+            # ftp.set_pasv(0)
+            # print(ftp.getwelcome())
+            ftp.cwd(strRemoteFolder)
+
+            file_path_name = '%s/%s' % (strLocalFolder, strLocalFileName)
+            print('--------', file_path_name)
+            print('---------r', strRemoteFileName)
+            if FTPtype == 'asc':
+                with open(file_path_name, 'rb') as f:
+                    ftp.storlines('STOR %s' % strRemoteFileName, f)
+            elif FTPtype == 'bin':
+                ftp.storbinary(
+                    'STOR %s' %
+                    strRemoteFileName, open(
+                        file_path_name, 'rb'))
+
+            # except Exception as E:
+            #     s.ShowErr(self.__class__.__name__,
+            #               sys._getframe().f_code.co_name,
+            #               'FTP upload "{}" failed with error:'.format(
+            #                   self._host),
+            #               '"{}"'.format(E))
 
         if self._Connection:
             if _putfile():
@@ -121,9 +138,11 @@ class FTPConn(object):
                     return True
 
     def close(self):
+        print("FTP Close")
         if self._Connection:
             self._Connection.quit()
             self._Connection = None
+
 
 class HAAPConn(object):
     def __init__(self, strIP, intPort, strPWD, intTO):
@@ -135,17 +154,16 @@ class HAAPConn(object):
         self._strMainPrompt = 'HA-AP'.encode(encoding="utf-8")
         self._strCLIPrompt = 'CLI>'.encode(encoding="utf-8")
         self._strAHPrompt = 'AH_CLI>'.encode(encoding="utf-8")
-        self._strCLIConflict = 'Another session owns the CLI'.encode(encoding="utf-8")
+        self._strCLIConflict = 'Another session owns the CLI'.encode(
+            encoding="utf-8")
         self.Connection = None
         self.telnet_connect()
-        
 
     def _connect(self):
         # try:
-            
-        objTelnetConnect = telnetlib.Telnet(self._host, self._port, self._timeout)
-        objTelnetConnect.read_until(
-            self._strLoginPrompt, timeout=1)
+        objTelnetConnect = telnetlib.Telnet(
+            self._host, self._port, self._timeout)
+        objTelnetConnect.read_until(self._strLoginPrompt, timeout=2)
         objTelnetConnect.write(self._password)
         objTelnetConnect.write(b'\r')
 
@@ -181,7 +199,7 @@ class HAAPConn(object):
     def is_AH(self):
         strPrompt = self.exctCMD('')
         if strPrompt:
-            if self._strAHPrompt in strPrompt:
+            if self._strAHPrompt in s.encode_utf8(strPrompt):
                 strVPD = self.exctCMD('vpd')
                 reAHNum = re.compile(r'Alert:\s*(\d*)')
                 objReAHNum = reAHNum.search(strVPD)
@@ -191,45 +209,52 @@ class HAAPConn(object):
 
     def go_to_main_menu(self):
         self.Connection.write(b'\r')
-        output = self.Connection.read_until(self._strMainPrompt, timeout=1)
+        output = self.Connection.read_until(self._strMainPrompt, timeout=2)
         if self._strCLIPrompt in output:
             self.Connection.write(b'exit')
-            if self._strMainPrompt in self.Connection.read_until(
-                self._strMainPrompt, timeout=1):
+            self.Connection.write(b'\r')
+            self.Connection.write(b'\r')
+            self.Connection.write(b'\r')
+            output_exit = self.Connection.read_until(
+                self._strMainPrompt, timeout=1)
+            # if s.encode_utf8('Configuration Conflicts\r\nOwner is session') in output_exit
+            # print('--------------------exit\n',output_exit)
+            if self._strMainPrompt in output_exit:
                 return True
         elif self._strMainPrompt in output:
             return True
 
     def go_to_CLI(self):
-        if self.Connection.write(b'\r'):
-            output = self.Connection.read_until(self._strCLIPrompt, timeout=1)
-            if self._strCLIPrompt in output:
+        self.Connection.write(b'\r')
+        output = self.Connection.read_until(self._strCLIPrompt, timeout=1)
+        if self._strCLIPrompt in output:
+            return True
+        elif self._strMainPrompt in output:
+            self.Connection.write(s.encode_utf8('7'))
+            str7Output = self.Connection.read_until(
+                self._strCLIPrompt, timeout=1)
+            if self._strCLIPrompt in str7Output:
                 return True
-            elif self._strMainPrompt in output:
-                self.Connection.write('7')
-                str7Output = self.Connection.read_until(self._strCLIPrompt, timeout=1)
-                if self._strCLIPrompt in str7Output:
+            elif self._strCLIConflict in str7Output:
+                self.Connection.write(s.encode_utf8('y'))
+                strConfirmCLI = self.Connection.read_until(
+                    self._strCLIPrompt, timeout=1)
+                if self._strCLIPrompt in strConfirmCLI:
                     return True
-                elif self._strCLIConflict in str7Output:
-                    self.Connection.write('y')
-                    strConfirmCLI = self.Connection.read_until(self._strCLIPrompt, timeout=1)
-                    if self._strCLIPrompt in strConfirmCLI:
-                        return True
-
 
             # except Exception as E:
             #     print('No need to reboot')
-            # self.Connection.close()    
+            # self.Connection.close()
 
     def exctCMD(self, strCommand):
         if self.Connection:
-            self.go_to_CLI()
-            self.Connection.write(
+            if self.go_to_CLI():
+                self.Connection.write(
                     strCommand.encode(encoding="utf-8") + b'\r')
-            strResult = str(self.Connection.read_until(
-                self._strCLIPrompt, timeout=2).decode())
-            if self._strCLIPrompt.decode() in strResult:
-                return strResult
+                strResult = str(self.Connection.read_until(
+                    self._strCLIPrompt, timeout=2).decode())
+                if self._strCLIPrompt.decode() in strResult:
+                    return strResult
 
     def Close(self):
         if self.Connection:
@@ -237,9 +262,10 @@ class HAAPConn(object):
 
     connection = property(
         get_connection_status, doc="Get HAAPConn instance's connection")
-        
+
 # w = HAAPConn('10.203.1.175', 23, 'password', 2)
-# w.change_ip_address('10.203.1.175')
+# w.install_license()
+
 
 if __name__ == '__main__':
 
